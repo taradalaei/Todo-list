@@ -23,8 +23,8 @@ class Status(str, Enum):
             raise InvalidStatusError(f"invalid status: {value!r}") from exc
 
 
-MIN_TITLE_LEN = 30
-MIN_DESC_LEN = 150
+MAX_TITLE_LEN = 30
+MAX_DESC_LEN = 150
 
 
 def _parse_deadline(raw: Optional[str]) -> Optional[date]:
@@ -56,13 +56,13 @@ class Task:
     deadline: Optional[date] = field(default=None)
 
     def __post_init__(self) -> None:
-        if len(self.title) < MIN_TITLE_LEN:
+        if len(self.title) > MAX_TITLE_LEN:
             raise ValidationError(
-                f"title must be at least {MIN_TITLE_LEN} characters"
+                f"title must be maximum {MAX_TITLE_LEN} characters"
             )
-        if len(self.description) < MIN_DESC_LEN:
+        if len(self.description) > MAX_DESC_LEN:
             raise ValidationError(
-                f"description must be at least {MIN_DESC_LEN} characters"
+                f"description must be maximum {MAX_DESC_LEN} characters"
             )
         # Ensure status is a Status enum (accept string for convenience)
         if isinstance(self.status, str):
@@ -93,16 +93,16 @@ class Task:
         - If deadline is a string, it must be YYYY-MM-DD; date is accepted too.
         """
         if title is not None:
-            if len(title) < MIN_TITLE_LEN:
+            if len(title) > MAX_TITLE_LEN:
                 raise ValidationError(
-                    f"title must be at least {MIN_TITLE_LEN} characters"
+                    f"title must be maximum {MAX_TITLE_LEN} characters"
                 )
             self.title = title
 
         if description is not None:
-            if len(description) < MIN_DESC_LEN:
+            if len(description) > MAX_DESC_LEN:
                 raise ValidationError(
-                    f"description must be at least {MIN_DESC_LEN} characters"
+                    f"description must be maximum {MAX_DESC_LEN} characters"
                 )
             self.description = description
 

@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Iterable, Optional
 
 from .exceptions import NotFoundError, ValidationError
-from .task import MIN_DESC_LEN, MIN_TITLE_LEN, Task
+from .task import MAX_DESC_LEN, MAX_TITLE_LEN, Task
 
 @dataclass(slots=True)
 class Project:
@@ -18,13 +18,13 @@ class Project:
     tasks: list[Task] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        if len(self.name) < MIN_TITLE_LEN:
+        if len(self.name) > MAX_TITLE_LEN:
             raise ValidationError(
-                f"project name must be at least {MIN_TITLE_LEN} characters"
+                f"project name must be maximum {MAX_TITLE_LEN} characters"
             )
-        if len(self.description) < MIN_DESC_LEN:
+        if len(self.description) > MAX_DESC_LEN:
             raise ValidationError(
-                f"project description must be at least {MIN_DESC_LEN} characters"
+                f"project description must be maximum {MAX_DESC_LEN} characters"
             )
 
     # --- Task management ----------------------------------------------
@@ -50,15 +50,15 @@ class Project:
     # --- Editing -------------------------------------------------------
     def rename(self, *, name: Optional[str] = None, description: Optional[str] = None) -> None:
         if name is not None:
-            if len(name) < MIN_TITLE_LEN:
+            if len(name) > MAX_TITLE_LEN:
                 raise ValidationError(
-                    f"project name must be at least {MIN_TITLE_LEN} characters"
+                    f"project name must be maximum {MAX_TITLE_LEN} characters"
                 )
             self.name = name
         if description is not None:
-            if len(description) < MIN_DESC_LEN:
+            if len(description) > MAX_DESC_LEN:
                 raise ValidationError(
-                    f"project description must be at least {MIN_DESC_LEN} characters"
+                    f"project description must be maximum {MAX_DESC_LEN} characters"
                 )
             self.description = description
 
