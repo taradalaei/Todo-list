@@ -112,6 +112,24 @@ class Task:
             self.change_status(status)
 
         if deadline is not None:
+            try:
+                deadline_dt = datetime.strptime(deadline, "%Y-%m-%d")
+            except ValueError:
+                raise ValidationError(
+                    f"Deadline '{deadline}' is invalid. Use YYYY-MM-DD format."
+                )
+
+            # 4️⃣ Check if deadline is in the past
+            if deadline_dt.date() < datetime.now().date():
+                raise ValidationError("Deadline cannot be in the past.")
+
+            # Optional: if you have a project start date
+            if hasattr(self, 'start_date') and deadline_dt.date() < self.start_date:
+                raise ValidationError("Deadline cannot be before project start date.")
+
+            ## Store the parsed datetime if you want consistent type
+            #task.deadline = deadline_dt
+
             if isinstance(deadline, date):
                 self.deadline = deadline
             else:

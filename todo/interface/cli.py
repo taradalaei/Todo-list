@@ -71,13 +71,18 @@ class ToDoCLI:
             print("No projects found.")
             return
         for p in projects:
-            print(f"[{p.id}] {p.name} — {len(p.tasks)} tasks")
+            print(f"[{p.id}] {p.name}: {p.description} — {len(p.tasks)} tasks")
 
     def _edit_project(self) -> None:
         pid = int(input("Project ID: "))
         name = input("New name (leave blank to skip): ") or None
         desc = input("New description (leave blank to skip): ") or None
         project = self.storage.get_project(pid)
+
+        if(name is not None):
+            if any(p.name.strip().lower() == name.strip().lower() for p in self.storage.projects.values()):
+                raise ValidationError(f"project name '{name}' already exists")
+        
         project.rename(name=name, description=desc)
         print("✅ Project updated.")
 
