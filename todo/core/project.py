@@ -18,6 +18,8 @@ class Project:
     tasks: list[Task] = field(default_factory=list)
 
     def __post_init__(self) -> None:
+        if not self.name.strip():
+            raise ValidationError("project name cannot be empty")
         if len(self.name) > MAX_TITLE_LEN:
             raise ValidationError(
                 f"project name must be maximum {MAX_TITLE_LEN} characters"
@@ -32,6 +34,10 @@ class Project:
         """Append a task to this project."""
         if any(t.id == task.id for t in self.tasks):
             raise ValidationError(f"task id {task.id} already exists in project")
+
+        if any(t.title.strip().lower() == task.title.strip().lower() for t in self.tasks):
+            raise ValidationError(f"task title '{task.title}' already exists in this project")
+
         self.tasks.append(task)
 
     def remove_task(self, task_id: int) -> None:

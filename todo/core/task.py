@@ -56,6 +56,8 @@ class Task:
     deadline: Optional[date] = field(default=None)
 
     def __post_init__(self) -> None:
+        if not self.title.strip():
+            raise ValidationError("task title cannot be empty")
         if len(self.title) > MAX_TITLE_LEN:
             raise ValidationError(
                 f"title must be maximum {MAX_TITLE_LEN} characters"
