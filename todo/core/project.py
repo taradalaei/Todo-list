@@ -32,11 +32,34 @@ class Project:
     # --- Task management ----------------------------------------------
     def add_task(self, task: Task) -> None:
         """Append a task to this project."""
+        # 1️⃣ Check duplicate ID
         if any(t.id == task.id for t in self.tasks):
             raise ValidationError(f"task id {task.id} already exists in project")
-
+        
+        # 2️⃣ Check duplicate title
         if any(t.title.strip().lower() == task.title.strip().lower() for t in self.tasks):
             raise ValidationError(f"task title '{task.title}' already exists in this project")
+
+
+        # 3️⃣ Validate deadline if provided
+        if task.deadline:
+            try:
+                deadline_dt = datetime.strptime(task.deadline, "%Y-%m-%d")
+            except ValueError:
+                raise ValidationError(
+                    f"Deadline '{task.deadline}' is invalid. Use YYYY-MM-DD format."
+                )
+
+            # 4️⃣ Check if deadline is in the past
+            if deadline_dt.date() < datetime.now().date():
+                raise ValidationError("Deadline cannot be in the past.")
+
+            # Optional: if you have a project start date
+            if hasattr(self, 'start_date') and deadline_dt.date() < self.start_date:
+                raise ValidationError("Deadline cannot be before project start date.")
+
+            ## Store the parsed datetime if you want consistent type
+            #task.deadline = deadline_dt
 
         self.tasks.append(task)
 
@@ -56,6 +79,9 @@ class Project:
     # --- Editing -------------------------------------------------------
     def rename(self, *, name: Optional[str] = None, description: Optional[str] = None) -> None:
         if name is not None:
+            if not name.strip():
+                raise ValidationError("project name cannot be empty")
+            
             if len(name) > MAX_TITLE_LEN:
                 raise ValidationError(
                     f"project name must be maximum {MAX_TITLE_LEN} characters"
