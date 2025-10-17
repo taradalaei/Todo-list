@@ -52,3 +52,54 @@ class InMemoryStorage:
         if project_id not in self.projects:
             raise NotFoundError(f"project {project_id} not found")
         del self.projects[project_id]
+
+    # --- Task operations -----------------------------------------------
+    def add_task(
+        self,
+        project_id: int,
+        title: str,
+        description: str,
+        deadline: Optional[str] = None,
+    ) -> Task:
+        project = self.get_project(project_id)
+
+        all_tasks = sum(len(p.tasks) for p in self.projects.values())
+        if all_tasks >= TASK_MAX:
+            raise ValidationError("maximum number of tasks reached")
+
+        task = Task(self._task_counter, title, description, "todo", deadline)
+        project.add_task(task)
+        self._task_counter += 1
+        return task
+
+    def remove_task(self, project_id: int, task_id: int) -> None:
+        project = self.get_project(project_id)
+        project.remove_task(task_id)
+
+    def list_tasks(self, project_id: int) -> list[Task]:
+        project = self.get_project(project_id)
+        return project.list_tasks()
+
+    def change_task_status(self, project_id: int, task_id: int, status: str) -> None:
+        project = self.get_project(project_id)
+        task = project.get_task(task_id)
+        task.change_status(status)
+
+    def edit_task(
+        self,
+        project_id: int,
+        task_id: int,
+        *,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        status: Optional[str] = None,
+        deadline: Optional[str] = None,
+    ) -> None:
+        project = self.get_project(project_id)
+        task = project.get_task(task_id)
+        task.update(
+            title=title,
+            description=description,
+            status=status,
+            deadline=deadline,
+        )
