@@ -4,8 +4,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Iterable, Optional
 
-from .exceptions import NotFoundError, ValidationError
-from .task import MAX_DESC_LEN, MAX_TITLE_LEN, Task
+from app.models.task import MAX_DESC_LEN, MAX_TITLE_LEN, Task
+from app.exceptions.base import ValidationError, NotFoundError
+
 
 @dataclass(slots=True)
 class Project:

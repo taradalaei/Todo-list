@@ -2,9 +2,9 @@
 
 Exposes: Project, Task, Status, and core exceptions.
 """
-from .project import Project
-from .task import Task, Status
-from .exceptions import (
+from ...app.models.project import Project
+from ...app.models.task import Task, Status
+from ...app.exceptions.base import (
     TaskError,
     InvalidStatusError,
     ValidationError,

@@ -5,7 +5,7 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Optional
 
-from .exceptions import InvalidStatusError, ValidationError
+from app.exceptions.base import ValidationError, InvalidStatusError
 
 
 class Status(str, Enum):

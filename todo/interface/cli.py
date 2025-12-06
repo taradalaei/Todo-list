@@ -1,14 +1,18 @@
 
 from __future__ import annotations
 
-from ..core.exceptions import ValidationError, NotFoundError
+from app.exceptions.base import ValidationError, NotFoundError
+from app.services.project_service import ProjectService
+from app.services.task_service import TaskService
 
 
 class ToDoCLI:
     """Command-line interface for the ToDoList app."""
 
-    def __init__(self, storage) -> None:   # ✅ وابستگی تزریق می‌شود
-        self.storage = storage
+    def __init__(self, project_service: ProjectService, task_service: TaskService) -> None:
+        self.project_service = project_service
+        self.task_service = task_service
+
 
     # --- Main loop --------------------------------------------------------
     def run(self) -> None:
@@ -61,11 +65,11 @@ class ToDoCLI:
     def _create_project(self) -> None:
         name = input("Project name: ")
         description = input("Description: ")
-        project = self.storage.add_project(name, description)
+        project = self.project_service.create_project(name, description)
         print(f"✅ Created project #{project.id}: {project.name}")
 
     def _list_projects(self) -> None:
-        projects = self.storage.list_projects()
+        projects = self.project_service.list_projects()
         if not projects:
             print("No projects found.")
             return
@@ -76,18 +80,17 @@ class ToDoCLI:
         pid = int(input("Project ID: "))
         name = input("New name (leave blank to skip): ") or None
         desc = input("New description (leave blank to skip): ") or None
-        project = self.storage.get_project(pid)
 
-        if(name is not None):
-            if any(p.name.strip().lower() == name.strip().lower() for p in self.storage.projects.values()):
-                raise ValidationError(f"project name '{name}' already exists")
-        
-        project.rename(name=name, description=desc)
+        project = self.project_service.rename_project(
+            project_id=pid,
+            new_name=name,
+            new_description=desc,
+        )
         print("✅ Project updated.")
 
     def _delete_project(self) -> None:
         pid = int(input("Project ID to delete: "))
-        self.storage.remove_project(pid)
+        self.project_service.delete_project(pid)
         print("🗑️ Project deleted.")
 
     # --- Task Menu --------------------------------------------------------
@@ -126,7 +129,7 @@ class ToDoCLI:
         title = input("Task title: ")
         desc = input("Task description: ")
         deadline = input("Deadline (YYYY-MM-DD or blank): ") or None
-        task = self.storage.add_task(pid, title, desc, deadline)
+        task = self.task_service.create_task(pid, title, desc, deadline)
         print(f"✅ Added task #{task.id} to project #{pid}")
 
     def _edit_task(self) -> None:
@@ -136,25 +139,32 @@ class ToDoCLI:
         desc = input("New description (blank to skip): ") or None
         status = input("New status [todo/doing/done] (blank to skip): ") or None
         deadline = input("New deadline (YYYY-MM-DD or blank): ") or None
-        self.storage.edit_task(pid, tid, title=title, description=desc, status=status, deadline=deadline)
+        self.task_service.edit_task(
+            pid,
+            tid,
+            title=title,
+            description=desc,
+            status=status,
+            deadline=deadline,
+        )
         print("✅ Task updated.")
 
     def _change_status(self) -> None:
         pid = int(input("Project ID: "))
         tid = int(input("Task ID: "))
         status = input("New status [todo/doing/done]: ")
-        self.storage.change_task_status(pid, tid, status)
+        self.task_service.change_status(pid, tid, status)
         print("✅ Status changed.")
 
     def _delete_task(self) -> None:
         pid = int(input("Project ID: "))
         tid = int(input("Task ID: "))
-        self.storage.remove_task(pid, tid)
+        self.task_service.delete_task(pid, tid)
         print("🗑️ Task deleted.")
 
     def _list_tasks(self) -> None:
         pid = int(input("Project ID: "))
-        tasks = self.storage.list_tasks(pid)
+        tasks = self.task_service.list_tasks(pid)
         if not tasks:
             print("No tasks found in this project.")
             return

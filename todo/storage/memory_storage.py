@@ -6,9 +6,10 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
-from ..core.project import Project
-from ..core.task import Task
-from ..core.exceptions import ValidationError, NotFoundError
+from app.models.project import Project
+from app.models.task import Task
+from app.exceptions.base import ValidationError, NotFoundError
+
 
 load_dotenv()  # Load environment variables
 
