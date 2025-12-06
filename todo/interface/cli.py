@@ -1,15 +1,14 @@
 
 from __future__ import annotations
 
-from ..storage.memory_storage import InMemoryStorage
 from ..core.exceptions import ValidationError, NotFoundError
 
 
 class ToDoCLI:
     """Command-line interface for the ToDoList app."""
 
-    def __init__(self) -> None:
-        self.storage = InMemoryStorage()
+    def __init__(self, storage) -> None:   # ✅ وابستگی تزریق می‌شود
+        self.storage = storage
 
     # --- Main loop --------------------------------------------------------
     def run(self) -> None:
@@ -162,12 +161,3 @@ class ToDoCLI:
         for t in tasks:
             deadline = getattr(t.deadline, "isoformat", lambda: str(t.deadline))() if t.deadline else "-"
             print(f"[{t.id}] {t.title[:25]} | {t.status.upper()} | {deadline}")
-
-
-def main() -> None:
-    cli = ToDoCLI()
-    cli.run()
-
-
-if __name__ == "__main__":
-    main()
