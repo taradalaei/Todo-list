@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: todolist-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: todolist_user
+      POSTGRES_PASSWORD: todolist_password
+      POSTGRES_DB: todolist_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - todolist_pg_data:/var/lib/postgresql/data
+
+volumes:
+  todolist_pg_data:
