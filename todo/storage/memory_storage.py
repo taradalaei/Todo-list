@@ -1,14 +1,16 @@
 
 from __future__ import annotations
+from datetime import date
 
 import os
 from typing import Optional
 
 from dotenv import load_dotenv
 
-from ..core.project import Project
-from ..core.task import Task
-from ..core.exceptions import ValidationError, NotFoundError
+from app.models.project import Project
+from app.models.task import Task
+from app.exceptions.base import ValidationError, NotFoundError
+
 
 load_dotenv()  # Load environment variables
 
@@ -42,6 +44,16 @@ class InMemoryStorage:
         project = self.projects.get(project_id)
         if not project:
             raise NotFoundError(f"project {project_id} not found")
+        return project
+
+    def update_project(
+        self,
+        project_id: int,
+        name: str | None = None,
+        description: str | None = None,
+    ) -> Project:
+        project = self.get_project(project_id)
+        project.rename(name=name, description=description)
         return project
 
     def list_projects(self) -> list[Project]:
@@ -103,3 +115,30 @@ class InMemoryStorage:
             status=status,
             deadline=deadline,
         )
+    # --- Overdue helper ------------------------------------------------
+    def iter_overdue(self, today: date | None = None) -> list[Task]:
+        """برگرداندن همه تسک‌های دیرکرددار (deadline گذشته و status != done)."""
+        if today is None:
+            today = date.today()
+
+        overdue_tasks: list[Task] = []
+
+        for project in self.projects.values():
+            # فرض می‌کنیم project.list_tasks() لیست Taskها رو می‌ده
+            for task in project.list_tasks():
+                # اگر deadline نداشت، اصلاً بررسی نمی‌کنیم
+                if not task.deadline:
+                    continue
+
+                try:
+                    # چون تو add_task deadline رو به صورت str می‌فرستی،
+                    # فرض می‌کنیم فرمتش YYYY-MM-DD هست و با fromisoformat می‌خونیم.
+                    task_deadline = date.fromisoformat(task.deadline)
+                except ValueError:
+                    # اگر فرمت تاریخ خراب بود، ازش می‌گذریم
+                    continue
+
+                if task_deadline < today and task.status != "done":
+                    overdue_tasks.append(task)
+
+        return overdue_tasks
