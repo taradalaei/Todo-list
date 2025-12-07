@@ -52,3 +52,8 @@ class TaskORM(Base):
     project: Mapped["ProjectORM"] = relationship(
         back_populates="tasks",
     )
+
+    at_closed: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )

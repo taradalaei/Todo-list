@@ -37,6 +37,9 @@ class TaskStoragePort(Protocol):
         status: str,
     ) -> None: ...
     def remove_task(self, project_id: int, task_id: int) -> None: ...
+    def iter_overdue(self, today: date) -> Iterable[Task]:
+        """همه تسک‌هایی که deadline < today و status != DONE دارند را برمی‌گرداند."""
+        ...
 
 
 class TaskService:
@@ -60,8 +63,8 @@ class TaskService:
             raise ValidationError("deadline must be in YYYY-MM-DD format") from exc
 
         # اگر می‌خواهی امروز هم مجاز باشد، این خط را به `if d < date.today():` تغییر بده
-        if d <= date.today():
-            raise ValidationError("deadline must be after today")
+        #if d < date.today():
+        #    raise ValidationError("deadline can not be in the past")
 
         return deadline
 

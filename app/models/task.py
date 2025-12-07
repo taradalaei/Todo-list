@@ -43,8 +43,8 @@ class Task:
     """Represents an individual task in a project.
 
     Validation rules:
-    - title length >= 30
-    - description length >= 150
+    - title length <= 30
+    - description length <= 150
     - status in {todo, doing, done}
     - deadline (if provided) must be a valid YYYY-MM-DD date
     """
@@ -75,16 +75,17 @@ class Task:
 
     # --- Mutators -----------------------------------------------------
     def change_status(self, new_status: Status | str) -> None:
-        """Change task status after validating allowed values."""
-        self.status = (
+        status_enum = (
             Status.from_string(new_status)
             if isinstance(new_status, str)
-            else Status(new_status.value)  # ensure valid member
+            else new_status
         )
-        if new_status == Status.DONE and self.at_closed is None:
+        self.status = status_enum
+
+        if status_enum is Status.DONE and self.at_closed is None:
             self.at_closed = datetime.now(timezone.utc)
-        elif new_status != Status.DONE:
-            self.at_closed = None  # اگر دوباره باز شد
+        elif status_enum is not Status.DONE:
+            self.at_closed = None
 
 
     def update(

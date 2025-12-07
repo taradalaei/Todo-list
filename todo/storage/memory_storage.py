@@ -1,5 +1,6 @@
 
 from __future__ import annotations
+from datetime import date
 
 import os
 from typing import Optional
@@ -114,3 +115,30 @@ class InMemoryStorage:
             status=status,
             deadline=deadline,
         )
+    # --- Overdue helper ------------------------------------------------
+    def iter_overdue(self, today: date | None = None) -> list[Task]:
+        """برگرداندن همه تسک‌های دیرکرددار (deadline گذشته و status != done)."""
+        if today is None:
+            today = date.today()
+
+        overdue_tasks: list[Task] = []
+
+        for project in self.projects.values():
+            # فرض می‌کنیم project.list_tasks() لیست Taskها رو می‌ده
+            for task in project.list_tasks():
+                # اگر deadline نداشت، اصلاً بررسی نمی‌کنیم
+                if not task.deadline:
+                    continue
+
+                try:
+                    # چون تو add_task deadline رو به صورت str می‌فرستی،
+                    # فرض می‌کنیم فرمتش YYYY-MM-DD هست و با fromisoformat می‌خونیم.
+                    task_deadline = date.fromisoformat(task.deadline)
+                except ValueError:
+                    # اگر فرمت تاریخ خراب بود، ازش می‌گذریم
+                    continue
+
+                if task_deadline < today and task.status != "done":
+                    overdue_tasks.append(task)
+
+        return overdue_tasks

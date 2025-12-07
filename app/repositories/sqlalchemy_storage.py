@@ -123,6 +123,10 @@ class SqlAlchemyStorage(ProjectStoragePort, TaskStoragePort):
     ) -> Task:
         deadline_date = self._parse_deadline(deadline)
 
+        project = self.session.get(ProjectORM, project_id)
+        if project is None:
+            raise NotFoundError(f"project {project_id} not found")
+
         orm = TaskORM(
             project_id=project_id,
             title=title,
