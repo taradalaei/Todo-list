@@ -62,9 +62,9 @@ class TaskService:
         except ValueError as exc:
             raise ValidationError("deadline must be in YYYY-MM-DD format") from exc
 
-        # اگر می‌خواهی امروز هم مجاز باشد، این خط را به `if d < date.today():` تغییر بده
-        #if d < date.today():
-        #    raise ValidationError("deadline can not be in the past")
+        # crucial
+        if d < date.today():
+            raise ValidationError("deadline can not be in the past")
 
         return deadline
 
