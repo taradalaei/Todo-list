@@ -45,6 +45,16 @@ class InMemoryStorage:
             raise NotFoundError(f"project {project_id} not found")
         return project
 
+    def update_project(
+        self,
+        project_id: int,
+        name: str | None = None,
+        description: str | None = None,
+    ) -> Project:
+        project = self.get_project(project_id)
+        project.rename(name=name, description=description)
+        return project
+
     def list_projects(self) -> list[Project]:
         return sorted(self.projects.values(), key=lambda p: p.created_at)
 

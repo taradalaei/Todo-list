@@ -11,6 +11,8 @@ from alembic import context
 # 👇 اضافه‌های ما:
 from app.db.base import Base
 from app.db.session import engine as app_engine
+from app.models import orm  # noqa: F401  → فقط برای اینکه ORMها لود بشن
+
 
 
 # this is the Alembic Config object, which provides

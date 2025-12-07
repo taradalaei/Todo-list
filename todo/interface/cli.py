@@ -73,8 +73,11 @@ class ToDoCLI:
         if not projects:
             print("No projects found.")
             return
+
         for p in projects:
-            print(f"[{p.id}] {p.name}: {p.description} — {len(p.tasks)} tasks")
+            # ✅ تعداد تسک‌ها را از TaskService می‌گیریم
+            tasks_count = len(self.task_service.list_tasks(p.id))
+            print(f"[{p.id}] {p.name}: {p.description} — {tasks_count} tasks")
 
     def _edit_project(self) -> None:
         pid = int(input("Project ID: "))
@@ -170,4 +173,4 @@ class ToDoCLI:
             return
         for t in tasks:
             deadline = getattr(t.deadline, "isoformat", lambda: str(t.deadline))() if t.deadline else "-"
-            print(f"[{t.id}] {t.title[:25]} | {t.status.upper()} | {deadline}")
+            print(f"[{t.id}] name: {t.title[:25]} | description: {t.description} | status: {t.status.upper()} | deadline: {deadline}")

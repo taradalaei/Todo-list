@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
 from typing import Iterable
+from datetime import date, datetime
+
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.models.project import Project
 from app.models.task import Task
 from app.models.orm import ProjectORM, TaskORM
-from app.exceptions.base import NotFoundError
+from app.exceptions.base import NotFoundError, ValidationError
 from app.services.project_service import ProjectStoragePort
 from app.services.task_service import TaskStoragePort
 
@@ -26,6 +27,21 @@ class SqlAlchemyStorage(ProjectStoragePort, TaskStoragePort):
         self.session = session
 
     # ------------- Project متدهای  ---------------------------------
+
+    def _parse_deadline(self, deadline: str | None) -> date | None:
+        """تبدیل رشته YYYY-MM-DD به date. اگر خالی بود → None.
+
+        اگر فرمت اشتباه باشد، ValidationError می‌اندازد تا CLI بتواند پیام مناسب نشان بدهد.
+        """
+        if not deadline:
+            return None
+
+        try:
+            return datetime.strptime(deadline.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            raise ValidationError(
+                f"invalid deadline format: '{deadline}'. Expected YYYY-MM-DD (e.g. 2025-12-31)"
+            )
 
     def add_project(self, name: str, description: str) -> Project:
         orm = ProjectORM(name=name, description=description)
@@ -63,6 +79,31 @@ class SqlAlchemyStorage(ProjectStoragePort, TaskStoragePort):
             tasks=[],
         )
 
+    def update_project(
+        self,
+        project_id: int,
+        name: str | None = None,
+        description: str | None = None,
+    ) -> Project:
+        orm = self.session.get(ProjectORM, project_id)
+        if orm is None:
+            raise NotFoundError(f"project with id={project_id} not found")
+
+        if name is not None:
+            orm.name = name
+        if description is not None:
+            orm.description = description
+
+        self.session.commit()
+        self.session.refresh(orm)
+
+        return Project(
+            id=orm.id,
+            name=orm.name,
+            description=orm.description,
+            tasks=[],
+        )
+
     def remove_project(self, project_id: int) -> None:
         orm = self.session.get(ProjectORM, project_id)
         if orm is None:
@@ -80,15 +121,14 @@ class SqlAlchemyStorage(ProjectStoragePort, TaskStoragePort):
         description: str,
         deadline: str | None,
     ) -> Task:
-        # deadline به صورت str (YYYY-MM-DD) از CLI/Service می‌آید،
-        # تبدیل به date را می‌گذاریم گردن Domain (Task.update / constructor).
-        # اینجا فقط ORM را پر می‌کنیم.
+        deadline_date = self._parse_deadline(deadline)
+
         orm = TaskORM(
             project_id=project_id,
             title=title,
             description=description,
             status="todo",
-            deadline=None,  # اگر خواستی می‌تونی بعداً تبدیلش کنی
+            deadline=deadline_date,
         )
         self.session.add(orm)
         self.session.commit()
@@ -142,7 +182,8 @@ class SqlAlchemyStorage(ProjectStoragePort, TaskStoragePort):
             orm.description = description
         if status is not None:
             orm.status = status
-        # deadline را فعلاً دست نمی‌زنیم، می‌تونیم بعداً اضافه کنیم
+        if deadline is not None:
+            orm.deadline = self._parse_deadline(deadline)
 
         self.session.commit()
         self.session.refresh(orm)

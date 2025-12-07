@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -54,6 +54,7 @@ class Task:
     description: str
     status: Status = field(default=Status.TODO)
     deadline: Optional[date] = field(default=None)
+    at_closed: Optional[datetime] = field(default=None)
 
     def __post_init__(self) -> None:
         if not self.title.strip():
@@ -80,6 +81,11 @@ class Task:
             if isinstance(new_status, str)
             else Status(new_status.value)  # ensure valid member
         )
+        if new_status == Status.DONE and self.at_closed is None:
+            self.at_closed = datetime.now(timezone.utc)
+        elif new_status != Status.DONE:
+            self.at_closed = None  # اگر دوباره باز شد
+
 
     def update(
         self,
