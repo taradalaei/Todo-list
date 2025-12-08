@@ -1,53 +1,30 @@
+# main.py
+# This file will be used as the FastAPI entrypoint in Phase 3.
+# The previous CLI logic has been moved to cli_main.py.
+
 from __future__ import annotations
 
-import os
+from fastapi import FastAPI
 
-from todo.interface.cli import ToDoCLI
-from todo.storage.memory_storage import InMemoryStorage
-
-from app.services.project_service import ProjectService
-from app.services.task_service import TaskService
-from app.db.session import get_session
-# from app.repositories.sqlalchemy_storage import SqlAlchemyStorage
+from app.api.routers import project_router, task_router
 
 
-def build_storage():
-    """انتخاب پیاده‌سازی Storage بر اساس تنظیمات."""
-    use_db = os.getenv("USE_DB", "0") == "1"
-
-    if use_db:
-        # ⭐ فقط وقتی نیاز داریم import می‌کنیم (تا circular import بی‌خودی نشه)
-        from app.repositories.sqlalchemy_storage import SqlAlchemyStorage
-
-        session = get_session()
-        storage = SqlAlchemyStorage(session)
-        return storage, session
-    else:
-        storage = InMemoryStorage()
-        return storage, None
+app = FastAPI(
+    title="ToDo List API",
+    version="3.0.0",
+    description=(
+        "ToDo List Web API for the Software Engineering course "
+        "(Phase 3 - FastAPI based interface)."
+    ),
+)
 
 
-
-def main() -> None:
-    storage, session = build_storage()
-
-    # لایه‌ی سرویس‌ها (DI: storage تزریق می‌شود)
-    project_service = ProjectService(storage)
-    task_service = TaskService(storage)
-
-    # لایه‌ی CLI (DI: سرویس‌ها تزریق می‌شوند)
-    cli = ToDoCLI(
-        project_service=project_service,
-        task_service=task_service,
-    )
-
-    try:
-        cli.run()
-    finally:
-        # اگر با DB کار می‌کنیم، Session را ببندیم
-        if session is not None:
-            session.close()
+# Include routers
+app.include_router(project_router)
+app.include_router(task_router)
 
 
-if __name__ == "__main__":
-    main()
+@app.get("/", tags=["health"])
+def read_root() -> dict[str, str]:
+    """Simple health check / welcome endpoint."""
+    return {"message": "ToDo List API is running (Phase 3 – Web API)."}

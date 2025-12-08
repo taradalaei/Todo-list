@@ -89,6 +89,13 @@ class TaskService:
         return self._storage.add_task(project_id, title, description, deadline)
 
     def list_tasks(self, project_id: int) -> list[Task]:
+        """لیست تسک‌های یک پروژه را برمی‌گرداند.
+
+        نکته: در حال حاضر فقط خروجی storage را wrap می‌کند.
+        اگر بخواهی در صورت نبودن پروژه 404 بدهی، باید در لایه‌ی storage
+        (یا در سرویسی که پروژه را مدیریت می‌کند) NotFoundError را raise کنی
+        و این متد همان را به بالا پاس بدهد.
+        """
         return list(self._storage.list_tasks(project_id))
 
     def edit_task(
@@ -101,15 +108,22 @@ class TaskService:
         status: str | None = None,
         deadline: str | None = None,
     ) -> Task:
+        """ویرایش تسک.
+
+        - title و description و deadline مستقیم از طریق edit_task استوریج آپدیت می‌شوند.
+        - تغییر status از طریق change_task_status انجام می‌شود تا منطق at_closed
+          در همان جای اصلی (Repository/Storage) اجرا شود.
+        """
+
+        status_enum: Status | None = None
+
         # ✅ ۱) اگر status جدید داده شده، اول معتبر بودنش را چک می‌کنیم
         if status is not None:
             try:
                 status_enum = Status.from_string(status)
             except InvalidStatusError as exc:
-                # برای CLI به صورت ValidationError می‌فرستیم
+                # برای لایه‌های بالاتر (CLI/API) به صورت ValidationError می‌فرستیم
                 raise ValidationError(str(exc)) from exc
-            # مقدار نرمال‌شده (todo/doing/done) را ذخیره می‌کنیم
-            status = status_enum.value
 
         # ✅ ۲) اگر title جدید داده شده، یکتا بودنش را در همان پروژه چک می‌کنیم
         if title is not None:
@@ -119,20 +133,42 @@ class TaskService:
                     raise ValidationError(
                         f"task title '{title}' already exists in project {project_id}"
                     )
-                
+
         # ✅ ۳) ولیدیشن ددلاین (اگر مقدار جدیدی داده شده)
         if deadline is not None:
             deadline = self._validate_deadline(deadline)
 
-        # ✅ ۳) بعد از همه‌ی ولیدیشن‌ها، تغییر واقعی را به storage می‌سپاریم
-        return self._storage.edit_task(
+        # ✅ ۴) ابتدا فقط title/description/deadline را از طریق edit_task آپدیت می‌کنیم
+        #       (status را اینجا به storage نمی‌دهیم تا منطق at_closed به هم نخورد)
+        task = self._storage.edit_task(
             project_id,
             task_id,
             title=title,
             description=description,
-            status=status,
+            status=None,
             deadline=deadline,
         )
+
+        # ✅ ۵) اگر status جدید داده شده، از مسیر رسمی change_task_status می‌رویم
+        #       تا منطق at_closed در همان‌جا (Repository) اجرا شود.
+        if status_enum is not None:
+            try:
+                self._storage.change_task_status(
+                    project_id,
+                    task_id,
+                    status_enum.value,
+                )
+            except NotFoundError:
+                # اگر در این مرحله تسک یا پروژه پیدا نشد، همان خطا را به بالا پاس می‌دهیم
+                raise
+
+            # بعد از تغییر status، نسخه‌ی به‌روز تسک را دوباره از storage می‌خوانیم
+            for t in self._storage.list_tasks(project_id):
+                if t.id == task_id:
+                    task = t
+                    break
+
+        return task
 
     def change_status(
         self,
