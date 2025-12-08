@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from typing import Iterable
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.project import Project
-from app.models.task import Task
+from app.models.task import Task, Status
 from app.models.orm import ProjectORM, TaskORM
 from app.exceptions.base import NotFoundError, ValidationError
 from app.services.project_service import ProjectStoragePort
@@ -144,10 +144,20 @@ class SqlAlchemyStorage(ProjectStoragePort, TaskStoragePort):
             description=orm.description,
             status=orm.status,
             deadline=orm.deadline,
+            at_closed=orm.at_closed,
         )
 
     def list_tasks(self, project_id: int) -> Iterable[Task]:
-        stmt = select(TaskORM).where(TaskORM.project_id == project_id).order_by(TaskORM.id)
+        # اول مطمئن شویم پروژه وجود دارد؛ اگر نبود → NotFoundError
+        project = self.session.get(ProjectORM, project_id)
+        if project is None:
+            raise NotFoundError(f"project with id={project_id} not found")
+
+        stmt = (
+            select(TaskORM)
+            .where(TaskORM.project_id == project_id)
+            .order_by(TaskORM.id)
+        )
         result = self.session.execute(stmt)
         for orm in result.scalars():
             yield Task(
@@ -156,6 +166,7 @@ class SqlAlchemyStorage(ProjectStoragePort, TaskStoragePort):
                 description=orm.description,
                 status=orm.status,
                 deadline=orm.deadline,
+                at_closed=orm.at_closed,
             )
 
     def _get_task_orm(self, project_id: int, task_id: int) -> TaskORM:
@@ -198,6 +209,7 @@ class SqlAlchemyStorage(ProjectStoragePort, TaskStoragePort):
             description=orm.description,
             status=orm.status,
             deadline=orm.deadline,
+            at_closed=orm.at_closed,
         )
 
     def change_task_status(
@@ -207,7 +219,18 @@ class SqlAlchemyStorage(ProjectStoragePort, TaskStoragePort):
         status: str,
     ) -> None:
         orm = self._get_task_orm(project_id, task_id)
+
+        old_status = orm.status
         orm.status = status
+
+        # منطق at_closed مطابق Domain:
+        # اگر از غیر DONE → به DONE رفت و at_closed خالی بود → الان مقدار بده
+        if status == Status.DONE.value and orm.at_closed is None:
+            orm.at_closed = datetime.now(timezone.utc)
+        # اگر وضعیت جدید غیر DONE است → at_closed را خالی کن
+        elif status != Status.DONE.value:
+            orm.at_closed = None
+
         self.session.commit()
 
     def remove_task(self, project_id: int, task_id: int) -> None:
