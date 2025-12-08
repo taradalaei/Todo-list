@@ -242,6 +242,40 @@ class TaskStoragePort(Protocol):
 * Swagger/OpenAPI
 * Unit Tests & Integration Tests
 
+--- 
+
+## CLI Status and Phase 3 (Web API)
+
+In Phase 3 of this project, the Command Line Interface (CLI) has been **deprecated**.  
+The primary interface of the system from this phase onward is a **Web API** built with FastAPI.
+
+- The CLI is still available in this version, but it is only kept for backward compatibility.
+- The CLI will not receive further updates and may be removed in future releases.
+- For all new features and interactions, it is recommended to use the Web API.
+
+### Running the Web API
+
+To run the Web API (the main interface for Phase 3), execute:
+
+```bash
+poetry run uvicorn main:app --reload
+````
+
+After starting the server, the automatically generated API documentation will be available at:
+
+* Swagger UI: `http://localhost:8000/docs`
+* ReDoc: `http://localhost:8000/redoc`
+
+### Running the CLI (Legacy – Deprecated)
+
+The Command Line Interface remains available in this version, but it is **deprecated** and no longer actively maintained.
+
+To run the legacy CLI (if needed), use the following command (assuming you moved the old CLI entrypoint to `cli_main.py`):
+
+```bash
+poetry run python cli_main.py
+```
+
 ---
 
 Made with ❤️ by **Tara Dalaei**
